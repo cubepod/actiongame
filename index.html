@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ロストゲート・クロニクル (Lost Gate Chronicles)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen active">
+            <h1 class="game-title">LOST GATE<br><span class="subtitle">CHRONICLES</span></h1>
+            <p class="description">ゲートをくぐり抜け、9つのラウンドを制覇せよ！</p>
+            
+            <div class="difficulty-section">
+                <h2>難易度を選択してスタート</h2>
+                <div class="difficulty-buttons">
+                    <button class="diff-btn" data-diff="easy-peasy">
+                        <span class="diff-name">超簡単</span>
+                        <span class="diff-desc">残機 10 / 体力 8</span>
+                    </button>
+                    <button class="diff-btn" data-diff="easy">
+                        <span class="diff-name">簡単</span>
+                        <span class="diff-desc">残機 7 / 体力 5</span>
+                    </button>
+                    <button class="diff-btn active" data-diff="normal">
+                        <span class="diff-name">普通</span>
+                        <span class="diff-desc">残機 5 / 体力 3</span>
+                    </button>
+                    <button class="diff-btn" data-diff="hard">
+                        <span class="diff-name">難しい</span>
+                        <span class="diff-desc">残機 3 / 体力 2</span>
+                    </button>
+                    <button class="diff-btn" data-diff="hardest">
+                        <span class="diff-name">激ムズ</span>
+                        <span class="diff-desc">残機 1 / 体力 1</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="instructions">
+                <h3>【操作方法】</h3>
+                <ul>
+                    <li>移動: <span class="key">←</span> <span class="key">→</span> キー</li>
+                    <li>ジャンプ / 水中浮上: <span class="key">スペース</span> キー</li>
+                    <li>ツタを登る / 隠し扉に入る / 宝箱を開ける: <span class="key">↑</span> キー</li>
+                    <li>ツタを降りる: <span class="key">↓</span> キー</li>
+                </ul>
+            </div>
+
+            <button id="start-btn" class="main-btn">ゲームスタート</button>
+        </div>
+
+        <!-- Main Game Screen -->
+        <div id="game-screen" class="screen">
+            <!-- HUD -->
+            <div id="hud">
+                <div class="hud-left">
+                    <div class="hud-item" id="lives-display">
+                        <span class="label">LIVES:</span>
+                        <span class="value" id="lives-count">5</span>
+                    </div>
+                    <div class="hud-item" id="hp-display">
+                        <span class="label">HP:</span>
+                        <div class="hp-bar-container">
+                            <div id="hp-bar"></div>
+                            <div id="hp-text">3 / 3</div>
+                        </div>
+                    </div>
+                    <div class="hud-item hidden" id="shield-display">
+                        <span class="label">SHIELD:</span>
+                        <span class="value" id="shield-count">🛡️ 0</span>
+                    </div>
+                    <div class="hud-item hidden" id="weapon-display">
+                        <span class="label">WEAPON:</span>
+                        <span class="value" id="weapon-count">🗡️ なし</span>
+                    </div>
+                </div>
+                <div class="hud-center">
+                    <div class="hud-item" id="round-stage-display">
+                        ROUND <span id="round-count">1</span> - STAGE <span id="stage-count">1</span>/3
+                    </div>
+                </div>
+                <div class="hud-right">
+                    <div class="hud-item" id="stage-type-display">
+                        STAGE: <span id="stage-type">地上</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boss HP Bar (Visible during boss fights) -->
+            <div id="boss-hud" class="hidden">
+                <span class="boss-label">BOSS:</span>
+                <div class="boss-hp-bar-container">
+                    <div id="boss-hp-bar"></div>
+                    <div id="boss-hp-text">100%</div>
+                </div>
+            </div>
+
+            <!-- Game Canvas -->
+            <canvas id="game-canvas" width="800" height="600"></canvas>
+
+            <!-- Touch Controls Overlay -->
+            <div id="touch-controls" class="hidden">
+                <div class="touch-left-group">
+                    <button id="touch-left" class="touch-btn">←</button>
+                    <button id="touch-right" class="touch-btn">→</button>
+                </div>
+                <div class="touch-right-group">
+                    <button id="touch-attack" class="touch-btn action-btn attack-btn">THROW</button>
+                    <div class="climb-stack">
+                        <button id="touch-up" class="touch-btn">↑</button>
+                        <button id="touch-down" class="touch-btn">↓</button>
+                    </div>
+                    <button id="touch-jump" class="touch-btn action-btn">JUMP</button>
+                </div>
+            </div>
+
+            <!-- On-Screen Alerts / Audio Toggle -->
+            <div class="hud-controls">
+                <button id="touch-toggle" class="icon-btn">📱 タッチ: オフ</button>
+                <button id="sound-toggle" class="icon-btn">🔊 音声: オン</button>
+                <button id="pause-btn" class="icon-btn">⏸ 一時停止</button>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="game-over-screen" class="screen">
+            <h1 class="game-over-title">GAME OVER</h1>
+            <p class="final-stats">到達ラウンド: <span id="go-round">1</span></p>
+            <p class="flavor-text">あきらめるな！ステージが再生成されます。</p>
+            <button id="retry-btn" class="main-btn">リトライ</button>
+            <button id="back-to-title-btn" class="secondary-btn">タイトルへ戻る</button>
+        </div>
+
+        <!-- Game Clear Screen -->
+        <div id="game-clear-screen" class="screen">
+            <h1 class="game-clear-title">ALL STAGE CLEAR</h1>
+            <p class="clear-congratulations">おめでとうございます！すべてのゲートを突破しました！</p>
+            <p class="final-stats">最終残機数: <span id="gc-lives">5</span></p>
+            <button id="play-again-btn" class="main-btn">もう一度遊ぶ</button>
+        </div>
+
+        <!-- Pause Overlay -->
+        <div id="pause-overlay" class="overlay hidden">
+            <div class="overlay-content">
+                <h2>PAUSE</h2>
+                <p>ゲームは一時停止されています</p>
+                <button id="resume-btn" class="main-btn">再開する</button>
+                <button id="quit-btn" class="secondary-btn">タイトルへ戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Game Logic -->
+    <script src="game.js"></script>
+</body>
+</html>
