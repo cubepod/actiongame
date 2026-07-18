@@ -35,13 +35,37 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, width, height, ra
     return this;
 };
 
-// --- Game Config & State ---
 const DIFFICULTY_CONFIG = {
-    'easy-peasy': { lives: 10, hp: 8 },
-    'easy': { lives: 7, hp: 5 },
-    'normal': { lives: 5, hp: 3 },
-    'hard': { lives: 3, hp: 2 },
-    'hardest': { lives: 1, hp: 1 }
+    'easy-peasy': {
+        spawnRateMultiplier: 0.35,
+        speedMultiplier: 0.6,
+        projSpeedMultiplier: 0.6,
+        projRangeMultiplier: 0.6
+    },
+    'easy': {
+        spawnRateMultiplier: 0.65,
+        speedMultiplier: 0.8,
+        projSpeedMultiplier: 0.8,
+        projRangeMultiplier: 0.8
+    },
+    'normal': {
+        spawnRateMultiplier: 1.0,
+        speedMultiplier: 1.0,
+        projSpeedMultiplier: 1.0,
+        projRangeMultiplier: 1.0
+    },
+    'hard': {
+        spawnRateMultiplier: 1.35,
+        speedMultiplier: 1.25,
+        projSpeedMultiplier: 1.25,
+        projRangeMultiplier: 1.3
+    },
+    'hardest': {
+        spawnRateMultiplier: 1.75,
+        speedMultiplier: 1.5,
+        projSpeedMultiplier: 1.5,
+        projRangeMultiplier: 1.6
+    }
 };
 
 const THEMES = ['地上', '地下', '水中', '城下'];
@@ -190,17 +214,17 @@ function setupDifficultyButtons() {
             diffButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             selectedDifficulty = btn.getAttribute('data-diff');
-            
-            const config = DIFFICULTY_CONFIG[selectedDifficulty];
-            startLives = config.lives;
-            startHp = config.hp;
         });
     });
     
-    // Set default
-    const config = DIFFICULTY_CONFIG[selectedDifficulty];
-    startLives = config.lives;
-    startHp = config.hp;
+    // Toggle manual settings panel
+    const optToggleBtn = document.getElementById('options-toggle-btn');
+    const customOptPanel = document.getElementById('custom-options-panel');
+    if (optToggleBtn && customOptPanel) {
+        optToggleBtn.addEventListener('click', () => {
+            customOptPanel.classList.toggle('hidden');
+        });
+    }
 }
 
 // Setup Event Listeners for UI
@@ -231,6 +255,7 @@ function setupEventListeners() {
         keys.space = false;
         keys.attack = false;
         attackDampened = false;
+        spaceDampened = false;
     });
 }
 
@@ -420,26 +445,38 @@ function triggerJump() {
         if (player.climbing) {
             player.climbing = false;
             player.vy = isUnderwater ? -2.2 : -7.5;
+            player.jumpsUsed = 1; // Jumping off vine counts as 1st jump
             playSound(isUnderwater ? 'swim' : 'jump');
-            keys.space = false;
         } else if (isUnderwater) {
             // Let frame loop handle progressive swimming
         } else if (player.grounded) {
-            player.vy = -9.2;
+            player.vy = -9.8;
             player.grounded = false;
+            player.jumpsUsed = 1;
             playSound('jump');
             createJumpDust(player.x + player.w/2, player.y + player.h);
-            keys.space = false;
+        } else if (player.jumpsUsed < 2) {
+            // Air double jump
+            player.vy = -9.8;
+            player.jumpsUsed = 2;
+            playSound('jump');
+            createJumpDust(player.x + player.w/2, player.y + player.h);
         }
     } else if (state === 'TREASURE_ROOM') {
         if (player.grounded) {
-            player.vy = -9.2;
+            player.vy = -9.8;
             player.grounded = false;
+            player.jumpsUsed = 1;
             playSound('jump');
             createJumpDust(player.x + player.w/2, player.y + player.h);
-            keys.space = false;
+        } else if (player.jumpsUsed < 2) {
+            player.vy = -9.8;
+            player.jumpsUsed = 2;
+            playSound('jump');
+            createJumpDust(player.x + player.w/2, player.y + player.h);
         }
     }
+    keys.space = false; // Always clear keys.space to prevent stuck states
 }
 
 // Handle throwing the equipped weapon
@@ -727,6 +764,17 @@ function updateBossHUD() {
 // --- Game Loop Management ---
 function startGame() {
     initAudio();
+    
+    // Read custom options if available
+    const selectLives = document.getElementById('initial-lives');
+    const selectHp = document.getElementById('initial-hp');
+    if (selectLives) {
+        startLives = parseInt(selectLives.value) || 5;
+    }
+    if (selectHp) {
+        startHp = parseInt(selectHp.value) || 3;
+    }
+    
     round = 1;
     currentStageIdx = 0;
     lives = startLives;
@@ -738,6 +786,7 @@ function startGame() {
     player.shield = 0;
     player.weapon = null;
     player.shootCooldown = 0;
+    player.jumpsUsed = 0;
     
     // Seed and generate new round stages
     generateStagesForRound();
@@ -808,6 +857,26 @@ function generateStagesForRound() {
 
 let respawnStageClone = null;
 
+function findMidStagePlatform() {
+    if (!stage || !stage.platforms || stage.platforms.length === 0) return null;
+    let bestPlatform = null;
+    let minDistance = Infinity;
+    const targetX = stage.width / 2;
+    
+    for (let platform of stage.platforms) {
+        if (platform.isCeiling || platform.y === 60) continue;
+        if (platform.x < 300 || platform.x + platform.w > stage.width - 300) continue;
+        
+        let centerX = platform.x + platform.w / 2;
+        let distance = Math.abs(centerX - targetX);
+        if (distance < minDistance) {
+            minDistance = distance;
+            bestPlatform = platform;
+        }
+    }
+    return bestPlatform;
+}
+
 function loadStage(isRespawn = false) {
     stageJustLoaded = true;
     projectiles = [];
@@ -853,6 +922,7 @@ function loadStage(isRespawn = false) {
     player.vx = 0;
     player.vy = 0;
     player.climbing = false;
+    player.jumpsUsed = 0;
 
     // Spawn a random weapon at the beginning of the stage with a 60% chance
     if (!isRespawn && Math.random() < 0.6) {
@@ -864,6 +934,21 @@ function loadStage(isRespawn = false) {
             w: 24, h: 24,
             type: chosen
         });
+    }
+
+    // Spawn a random weapon in the middle of the stage if player has no weapon (except on hardest difficulty)
+    if (player.weapon === null && selectedDifficulty !== 'hardest') {
+        const bestPlatform = findMidStagePlatform();
+        if (bestPlatform) {
+            const types = ['axe', 'javelin', 'knife'];
+            const chosen = types[Math.floor(Math.random() * types.length)];
+            weaponPickups.push({
+                x: Math.round(bestPlatform.x + bestPlatform.w / 2 - 12),
+                y: Math.round(bestPlatform.y - 24),
+                w: 24, h: 24,
+                type: chosen
+            });
+        }
     }
     
     updateHUD();
@@ -903,7 +988,8 @@ function generateStage(theme, currentRound, hasHiddenDoor) {
         platforms.push({ x: currentX + gap, y: y, w: w, h: 600 - y });
 
         // If underwater, sometimes add a hanging ceiling platform in the gap!
-        if (isUnderwater && Math.random() < 0.45 && gap > 50) {
+        const ceilingPlatformSpawnRate = 0.45 * DIFFICULTY_CONFIG[selectedDifficulty].spawnRateMultiplier;
+        if (isUnderwater && Math.random() < ceilingPlatformSpawnRate && gap > 50) {
             let cpW = 60 + Math.random() * 80;
             let cpH = 80 + Math.random() * 90; // Hang down 80-170px
             let cpX = currentX + (gap / 2) - (cpW / 2);
@@ -940,7 +1026,8 @@ function generateStage(theme, currentRound, hasHiddenDoor) {
         }
 
         // Enemies
-        if (Math.random() < 0.55 && (currentX > 600)) {
+        const spawnRate = 0.55 * DIFFICULTY_CONFIG[selectedDifficulty].spawnRateMultiplier;
+        if (Math.random() < spawnRate && (currentX > 600)) {
             let enemyX = currentX + gap + w / 2 - 16;
             let enemyY = y - 32;
             let type = chooseEnemyType(theme, currentRound);
@@ -997,7 +1084,8 @@ function generateStage(theme, currentRound, hasHiddenDoor) {
                     break;
                 }
             }
-            if (!overlapsCeilingPlatform && Math.random() < 0.55) {
+            const ceilingSpikeSpawnRate = 0.55 * DIFFICULTY_CONFIG[selectedDifficulty].spawnRateMultiplier;
+            if (!overlapsCeilingPlatform && Math.random() < ceilingSpikeSpawnRate) {
                 let spike = createEnemy(sx, 60, 'walker', true, currentRound);
                 spike.vx = 0;
                 spike.vy = 0;
@@ -1057,7 +1145,8 @@ function generateCastleStage(currentRound, hasHiddenDoor) {
         }
         
         // Spawn standard enemies
-        if (Math.random() < 0.6) {
+        const spawnRate = 0.6 * DIFFICULTY_CONFIG[selectedDifficulty].spawnRateMultiplier;
+        if (Math.random() < spawnRate) {
             enemies.push(createEnemy(currentX + gap + w/2 - 16, y - 32, chooseEnemyType('城内', currentRound), Math.random() < 0.25, currentRound));
         }
         
@@ -1120,8 +1209,11 @@ function chooseEnemyType(theme, currentRound) {
 
 function createEnemy(x, y, type, isSpiked, currentRound) {
     let vx = 0;
+    const diffCfg = DIFFICULTY_CONFIG[selectedDifficulty] || { speedMultiplier: 1.0 };
+    const speedMult = diffCfg.speedMultiplier;
+    
     if (type === 'walker') {
-        vx = (0.7 + currentRound * 0.1) * (Math.random() < 0.5 ? 1 : -1);
+        vx = (0.7 + currentRound * 0.1) * speedMult * (Math.random() < 0.5 ? 1 : -1);
     }
     
     // HP based on type and spike variations
@@ -1153,12 +1245,15 @@ function createEnemy(x, y, type, isSpiked, currentRound) {
 
 function createBoss(x, y, currentRound) {
     const size = 64 + currentRound * 3.5;
+    const diffCfg = DIFFICULTY_CONFIG[selectedDifficulty] || { speedMultiplier: 1.0 };
+    const speedMult = diffCfg.speedMultiplier;
+    
     return {
         x: x - size/2,
         y: y - size,
         w: size,
         h: size,
-        vx: (1.1 + currentRound * 0.15) * -1,
+        vx: (1.1 + currentRound * 0.15) * -1 * speedMult,
         vy: 0,
         hp: 3 + currentRound,
         maxHp: 3 + currentRound,
@@ -1531,13 +1626,7 @@ function updatePlayerPhysicsTreasure() {
     player.vy += gravity;
     if (player.vy > 12) player.vy = 12;
 
-    if (keys.space && player.grounded) {
-        player.vy = -9.2;
-        player.grounded = false;
-        keys.space = false;
-        playSound('jump');
-        createJumpDust(player.x + player.w/2, player.y + player.h);
-    }
+
 
     // Horizontal Movement
     player.x += player.vx;
@@ -1564,6 +1653,7 @@ function updatePlayerPhysicsTreasure() {
                 player.y = platform.y - player.h;
                 player.vy = 0;
                 player.grounded = true;
+                player.jumpsUsed = 0;
             } else if (player.vy < 0) {
                 player.y = platform.y + platform.h;
                 player.vy = 0;
@@ -1639,25 +1729,25 @@ function updatePlayerPhysics(currentStage) {
 
         player.vy += gravity;
         
-        const maxFallSpeed = isUnderwater ? 1.5 : 12;
+        let maxFallSpeed = isUnderwater ? 1.5 : 12;
+        if (isUnderwater && keys.down) {
+            maxFallSpeed = 4.5;
+        }
         if (player.vy > maxFallSpeed) player.vy = maxFallSpeed;
 
-        if (keys.space) {
-            if (isUnderwater) {
-                player.vy -= 0.22;
-                if (player.vy < -2.0) player.vy = -2.0;
+        if (isUnderwater) {
+            if (keys.up) {
+                player.vy -= 0.25;
+                if (player.vy < -2.5) player.vy = -2.5;
                 
                 // Bubble emission
                 if (Math.random() < 0.15) {
                     particles.push(createBubble(player.x + player.w/2, player.y));
                 }
                 if (frame % 15 === 0) playSound('swim');
-            } else if (player.grounded) {
-                player.vy = -9.2;
-                player.grounded = false;
-                keys.space = false;
-                playSound('jump');
-                createJumpDust(player.x + player.w/2, player.y + player.h);
+            } else if (keys.down) {
+                player.vy += 0.35;
+                if (player.vy > 4.5) player.vy = 4.5;
             }
         }
 
@@ -1697,6 +1787,7 @@ function updatePlayerPhysics(currentStage) {
                 player.y = platform.y - player.h;
                 player.vy = 0;
                 player.grounded = true;
+                player.jumpsUsed = 0;
             } else if (player.vy < 0) {
                 player.y = platform.y + platform.h;
                 player.vy = 0;
@@ -1720,6 +1811,15 @@ function updatePlayerPhysics(currentStage) {
 
 // Enemy Updates
 function updateEnemies(currentStage) {
+    const diffCfg = DIFFICULTY_CONFIG[selectedDifficulty] || {
+        speedMultiplier: 1.0,
+        projSpeedMultiplier: 1.0,
+        projRangeMultiplier: 1.0
+    };
+    const speedMult = diffCfg.speedMultiplier;
+    const projSpeedMult = diffCfg.projSpeedMultiplier;
+    const projRangeMult = diffCfg.projRangeMultiplier;
+
     for (let enemy of currentStage.enemies) {
         if (!enemy.alive) continue;
         
@@ -1798,9 +1898,9 @@ function updateEnemies(currentStage) {
             if (grounded) {
                 enemy.jumpTimer--;
                 if (enemy.jumpTimer <= 0) {
-                    enemy.vy = -6.5;
-                    enemy.vx = (player.x > enemy.x) ? 1.5 : -1.5;
-                    enemy.jumpTimer = 50 + Math.random() * 80;
+                    enemy.vy = -6.5 * Math.sqrt(speedMult);
+                    enemy.vx = (player.x > enemy.x) ? 1.5 * speedMult : -1.5 * speedMult;
+                    enemy.jumpTimer = (50 + Math.random() * 80) / speedMult;
                 } else {
                     enemy.vx = 0;
                 }
@@ -1813,11 +1913,11 @@ function updateEnemies(currentStage) {
                     x: dir > 0 ? enemy.x + enemy.w : enemy.x - 16,
                     y: enemy.y + 8,
                     w: 16, h: 16,
-                    vx: dir * 4, vy: 0,
+                    vx: dir * 4 * projSpeedMult, vy: 0,
                     type: 'fire',
-                    timer: 120
+                    timer: Math.round(70 * projRangeMult / projSpeedMult)
                 });
-                enemy.shootTimer = 90 + Math.random() * 80;
+                enemy.shootTimer = (90 + Math.random() * 80) / speedMult;
                 playSound('swim');
             }
         } else if (enemy.type === 'wizard') {
@@ -1828,13 +1928,13 @@ function updateEnemies(currentStage) {
                     x: enemy.x + 8,
                     y: enemy.y + 8,
                     w: 16, h: 16,
-                    vx: Math.cos(angle) * 1.8,
-                    vy: Math.sin(angle) * 1.8,
+                    vx: Math.cos(angle) * 1.8 * projSpeedMult,
+                    vy: Math.sin(angle) * 1.8 * projSpeedMult,
                     type: 'magic',
-                    timer: 100,
+                    timer: Math.round(100 * projRangeMult / projSpeedMult),
                     tracking: true
                 });
-                enemy.shootTimer = 130 + Math.random() * 90;
+                enemy.shootTimer = (130 + Math.random() * 90) / speedMult;
                 playSound('jump');
             }
         }
@@ -1885,6 +1985,15 @@ function updateBoss(currentStage) {
     if (!currentStage.boss) return;
     const boss = currentStage.boss;
     
+    const diffCfg = DIFFICULTY_CONFIG[selectedDifficulty] || {
+        speedMultiplier: 1.0,
+        projSpeedMultiplier: 1.0,
+        projRangeMultiplier: 1.0
+    };
+    const speedMult = diffCfg.speedMultiplier;
+    const projSpeedMult = diffCfg.projSpeedMultiplier;
+    const projRangeMult = diffCfg.projRangeMultiplier;
+    
     if (boss.hp <= 0) {
         if (boss.alive) {
             boss.alive = false;
@@ -1918,14 +2027,14 @@ function updateBoss(currentStage) {
                 x: dir > 0 ? boss.x + boss.w : boss.x - 20,
                 y: boss.y + boss.h / 2 - 10,
                 w: 20, h: 20,
-                vx: dir * (3.5 + boss.round * 0.25), vy: 0,
+                vx: dir * (3.5 + boss.round * 0.25) * projSpeedMult, vy: 0,
                 type: 'fire',
-                timer: 160
+                timer: Math.round(160 * projRangeMult / projSpeedMult)
             });
             playSound('swim');
         } else if (attack < 0.75) {
             // Jump Stomp attack
-            boss.vy = -7.5 - Math.random() * 4;
+            boss.vy = (-7.5 - Math.random() * 4) * Math.sqrt(speedMult);
             boss.grounded = false;
         } else {
             // Magical orb
@@ -1934,15 +2043,15 @@ function updateBoss(currentStage) {
                 x: boss.x + boss.w/2 - 10,
                 y: boss.y + boss.h/2 - 10,
                 w: 20, h: 20,
-                vx: Math.cos(angle) * (1.8 + boss.round * 0.1),
-                vy: Math.sin(angle) * (1.8 + boss.round * 0.1),
+                vx: Math.cos(angle) * (1.8 + boss.round * 0.1) * projSpeedMult,
+                vy: Math.sin(angle) * (1.8 + boss.round * 0.1) * projSpeedMult,
                 type: 'magic',
-                timer: 200,
+                timer: Math.round(200 * projRangeMult / projSpeedMult),
                 tracking: true
             });
             playSound('jump');
         }
-        boss.shootTimer = Math.max(35, 130 - boss.round * 8) + Math.random() * 60;
+        boss.shootTimer = (Math.max(35, 130 - boss.round * 8) + Math.random() * 60) / speedMult;
     }
 
     // Apply gravity
@@ -1991,6 +2100,13 @@ function updateBoss(currentStage) {
 
 // Projectile Updates
 function updateProjectiles() {
+    const diffCfg = DIFFICULTY_CONFIG[selectedDifficulty] || {
+        projSpeedMultiplier: 1.0,
+        projRangeMultiplier: 1.0
+    };
+    const projSpeedMult = diffCfg.projSpeedMultiplier;
+    const projRangeMult = diffCfg.projRangeMultiplier;
+
     for (let i = projectiles.length - 1; i >= 0; i--) {
         let p = projectiles[i];
         p.timer--;
@@ -2083,9 +2199,9 @@ function updateProjectiles() {
             let dx = targetX - p.x;
             let dy = targetY - p.y;
             let dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist > 5 && dist < 280) {
-                p.vx = (p.vx * 0.94) + (dx / dist * 0.06) * 1.8;
-                p.vy = (p.vy * 0.94) + (dy / dist * 0.06) * 1.8;
+            if (dist > 5 && dist < 280 * projRangeMult) {
+                p.vx = (p.vx * 0.94) + (dx / dist * 0.06) * 1.8 * projSpeedMult;
+                p.vy = (p.vy * 0.94) + (dy / dist * 0.06) * 1.8 * projSpeedMult;
             }
         }
 

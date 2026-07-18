@@ -21,34 +21,61 @@
                 <div class="difficulty-buttons">
                     <button class="diff-btn" data-diff="easy-peasy">
                         <span class="diff-name">超簡単</span>
-                        <span class="diff-desc">残機 10 / 体力 8</span>
+                        <span class="diff-desc">敵が極めて少なく、動きや弾がとても遅い</span>
                     </button>
                     <button class="diff-btn" data-diff="easy">
                         <span class="diff-name">簡単</span>
-                        <span class="diff-desc">残機 7 / 体力 5</span>
+                        <span class="diff-desc">敵が少なく、動きや弾が遅め</span>
                     </button>
                     <button class="diff-btn active" data-diff="normal">
                         <span class="diff-name">普通</span>
-                        <span class="diff-desc">残機 5 / 体力 3</span>
+                        <span class="diff-desc">標準的な敵の数、速度、弾の射程</span>
                     </button>
                     <button class="diff-btn" data-diff="hard">
                         <span class="diff-name">難しい</span>
-                        <span class="diff-desc">残機 3 / 体力 2</span>
+                        <span class="diff-desc">敵が多く、動きが速く、弾速もアップ</span>
                     </button>
                     <button class="diff-btn" data-diff="hardest">
                         <span class="diff-name">激ムズ</span>
-                        <span class="diff-desc">残機 1 / 体力 1</span>
+                        <span class="diff-desc">敵が大量、超高速移動、弾幕＆長射程</span>
                     </button>
+                </div>
+            </div>
+
+            <div class="options-section">
+                <button id="options-toggle-btn" class="options-btn">⚙️ 初期設定（残機・体力）を変更</button>
+                <div id="custom-options-panel" class="custom-panel hidden">
+                    <div class="option-group">
+                        <label for="initial-lives">初期残機 (LIVES):</label>
+                        <select id="initial-lives">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="5" selected>5</option>
+                            <option value="7">7</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                    <div class="option-group">
+                        <label for="initial-hp">初期体力 (HP):</label>
+                        <select id="initial-hp">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3" selected>3</option>
+                            <option value="5">5</option>
+                            <option value="8">8</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <div class="instructions">
                 <h3>【操作方法】</h3>
                 <ul>
-                    <li>移動: <span class="key">←</span> <span class="key">→</span> キー</li>
-                    <li>ジャンプ / 水中浮上: <span class="key">スペース</span> キー</li>
-                    <li>ツタを登る / 隠し扉に入る / 宝箱を開ける: <span class="key">↑</span> キー</li>
-                    <li>ツタを降りる: <span class="key">↓</span> キー</li>
+                    <li>移動: <span class="key">←</span> <span class="key">→</span></li>
+                    <li>ジャンプ / 浮上: <span class="key">スペース</span></li>
+                    <li>登る / 入る / 開ける: <span class="key">↑</span></li>
+                    <li>降りる: <span class="key">↓</span></li>
                 </ul>
             </div>
 

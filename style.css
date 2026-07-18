@@ -47,7 +47,7 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 2rem;
+    padding: 1rem 2rem;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.4s ease, transform 0.4s ease;
@@ -68,9 +68,9 @@ body {
 
 .game-title {
     font-family: 'Press Start 2P', cursive;
-    font-size: 2.5rem;
-    line-height: 1.2;
-    margin-bottom: 0.5rem;
+    font-size: 2.2rem;
+    line-height: 1.1;
+    margin-bottom: 0.25rem;
     background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 50%, #4f46e5 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -79,30 +79,29 @@ body {
 }
 
 .game-title .subtitle {
-    font-size: 1.5rem;
-    letter-spacing: 0.4rem;
+    font-size: 1.25rem;
+    letter-spacing: 0.3rem;
     color: #818cf8;
     -webkit-text-fill-color: initial;
     background: none;
 }
 
 .description {
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: #94a3b8;
-    margin-bottom: 2rem;
+    margin-bottom: 0.75rem;
 }
 
-/* Difficulty Selector */
 .difficulty-section {
     width: 100%;
     max-width: 600px;
-    margin-bottom: 2rem;
+    margin-bottom: 0.75rem;
 }
 
 .difficulty-section h2 {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     color: #cbd5e1;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     font-weight: 600;
 }
 
@@ -116,7 +115,7 @@ body {
     background: rgba(30, 41, 59, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 8px;
-    padding: 0.75rem 0.5rem;
+    padding: 0.5rem 0.25rem;
     color: #94a3b8;
     cursor: pointer;
     display: flex;
@@ -139,13 +138,13 @@ body {
 }
 
 .diff-name {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 800;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.15rem;
 }
 
 .diff-desc {
-    font-size: 0.65rem;
+    font-size: 0.58rem;
     opacity: 0.8;
 }
 
@@ -154,28 +153,31 @@ body {
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.03);
     border-radius: 8px;
-    padding: 1rem;
+    padding: 0.75rem;
     width: 100%;
-    max-width: 500px;
-    margin-bottom: 2rem;
+    max-width: 550px;
+    margin-bottom: 1rem;
     text-align: left;
 }
 
 .instructions h3 {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #818cf8;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.35rem;
 }
 
 .instructions ul {
     list-style: none;
-    font-size: 0.8rem;
-    line-height: 1.5;
+    font-size: 0.75rem;
+    line-height: 1.4;
     color: #94a3b8;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.25rem 1rem;
 }
 
 .instructions li {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0;
 }
 
 .key {
@@ -635,4 +637,74 @@ body {
     80% { transform: translate(-1px, -1px) rotate(1deg); }
     90% { transform: translate(2px, 2px) rotate(0deg); }
     100% { transform: translate(1px, -2px) rotate(-1deg); }
+}
+
+.options-section {
+    margin: 10px 0;
+    text-align: center;
+}
+
+.options-btn {
+    background: rgba(30, 41, 59, 0.7);
+    border: 2px solid #475569;
+    color: #cbd5e1;
+    padding: 8px 16px;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.options-btn:hover {
+    background: rgba(51, 65, 85, 0.85);
+    border-color: #fbbf24;
+    color: #ffffff;
+}
+
+.custom-panel {
+    margin-top: 10px;
+    background: rgba(15, 23, 42, 0.8);
+    border: 2px solid #334155;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    transition: all 0.3s ease;
+}
+
+.custom-panel.hidden {
+    display: none !important;
+}
+
+.option-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.option-group label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.option-group select {
+    background: #1e293b;
+    border: 2px solid #475569;
+    color: #f8fafc;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 0.8rem;
+    cursor: pointer;
+    outline: none;
+}
+
+.option-group select:focus {
+    border-color: #fbbf24;
 }
